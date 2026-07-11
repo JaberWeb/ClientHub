@@ -22,7 +22,25 @@ export interface Client extends CreateClientInput {
   updatedAt: string;
 }
 
+export interface GetClientsResult {
+  clients: Client[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export async function addClient(data: CreateClientInput): Promise<Client> {
   const res = await api.post<{ message: string; client: Client }>("/api/clients", data);
   return res.data.client;
+}
+
+export async function getClients(params: {
+  ownerId: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<GetClientsResult> {
+  const res = await api.get<GetClientsResult>("/api/clients", { params });
+  return res.data;
 }

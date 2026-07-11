@@ -26,6 +26,47 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.get("/api/clients", async (req, res) => {
+  try {
+    const { ownerId, search, page = "1", limit = "10" } = req.query;
+
+    if (!ownerId) {
+      res.status(400).json({ error: "ownerId query parameter is required." });
+      return;
+    }
+
+    const filter: any = { ownerId };
+
+    if (search) {
+      const s = search as string;
+      filter.$or = [
+        { companyName: { $regex: s, $options: "i" } },
+        { contactPerson: { $regex: s, $options: "i" } },
+        { email: { $regex: s, $options: "i" } },
+      ];
+    }
+
+    const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
+    const limitNum = Math.max(1, Math.min(50, parseInt(limit as string, 10) || 10));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [clients, total] = await Promise.all([
+      db.collection("clients")
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .toArray(),
+      db.collection("clients").countDocuments(filter),
+    ]);
+
+    res.json({ clients, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) });
+  } catch (error) {
+    console.error("Error fetching clients:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+});
+
 app.post("/api/clients", async (req, res) => {
   try {
     const body = req.body as CreateClientInput;
