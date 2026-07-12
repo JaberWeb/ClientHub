@@ -6,17 +6,18 @@ import { BriefcaseBusiness, Menu, X, LogOut, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useSession, signOut } from "@/app/lib/auth-client";
 
-const navLinks = [
-  { label: "Home", href: "/" },
-  { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact" },
-];
-
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const { data: session, isPending } = useSession();
   const isLoggedIn = !!session;
+
+  const navLinks = [
+    { label: "Home", href: "/" },
+    ...(isLoggedIn ? [{ label: "Dashboard", href: "/dashboard" }] : []),
+    { label: "About", href: "/about" },
+    { label: "Contact", href: "/contact" },
+  ];
 
   const handleLogout = async () => {
     await signOut();
