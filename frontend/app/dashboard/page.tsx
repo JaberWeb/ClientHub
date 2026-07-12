@@ -1,3 +1,11 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useSession } from "@/app/lib/auth-client";
+import { getClients } from "@/services/client";
+import { getProjects } from "@/services/project";
+import { getInvoices, Invoice } from "@/services/invoice";
 import {
   BriefcaseBusiness,
   TrendingUp,
@@ -5,9 +13,76 @@ import {
   Users,
   FolderKanban,
   Clock,
+  Loader2,
 } from "lucide-react";
 
 export default function DashboardPage() {
+  const { data: session } = useSession();
+  const ownerId = session?.user?.id ?? "";
+
+  const [revenue, setRevenue] = useState(0);
+  const [clientCount, setClientCount] = useState(0);
+  const [projectCount, setProjectCount] = useState(0);
+  const [activeProjectCount, setActiveProjectCount] = useState(0);
+  const [deadlineCount, setDeadlineCount] = useState(0);
+  const [recentInvoices, setRecentInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      if (!ownerId) return;
+      try {
+        const [
+          clientResult,
+          projectResult,
+          activeResult,
+          paidResult,
+          overdueResult,
+          recentResult,
+        ] = await Promise.all([
+          getClients({ ownerId, limit: 1 }),
+          getProjects({ ownerId, limit: 1 }),
+          getProjects({ ownerId, status: "ongoing", limit: 1 }),
+          getInvoices({ ownerId, status: "paid", limit: 9999 }),
+          getInvoices({ ownerId, status: "overdue", limit: 1 }),
+          getInvoices({ ownerId, limit: 5 }),
+        ]);
+
+        setClientCount(clientResult.total);
+        setProjectCount(projectResult.total);
+        setActiveProjectCount(activeResult.total);
+        setRevenue(
+          paidResult.invoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0)
+        );
+        setDeadlineCount(overdueResult.total);
+        setRecentInvoices(recentResult.invoices);
+      } catch {
+        // silently fail
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [ownerId]);
+
+  const formatCurrency = (val: number) =>
+    "$" + val.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const activityConfig: Record<string, { label: string; badge: string; color: string }> = {
+    paid: { label: "Invoice paid", badge: "Paid", color: "bg-emerald-100 text-emerald-700" },
+    pending: { label: "Invoice sent", badge: "Sent", color: "bg-blue-100 text-blue-700" },
+    overdue: { label: "Payment overdue", badge: "Overdue", color: "bg-red-100 text-red-700" },
+    cancelled: { label: "Invoice cancelled", badge: "Cancelled", color: "bg-slate-100 text-slate-600" },
+  };
+
+  if (loading) {
+    return (
+      <div className="mx-auto flex max-w-6xl items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       {/* Header */}
@@ -28,24 +103,9 @@ export default function DashboardPage() {
             <span className="text-xs font-medium text-slate-500">Revenue</span>
             <DollarSign className="h-4 w-4 text-blue-600" />
           </div>
-          <p className="mt-2 text-3xl font-bold text-slate-900">$12,480</p>
+          <p className="mt-2 text-3xl font-bold text-slate-900">{formatCurrency(revenue)}</p>
           <div className="mt-1 flex items-center gap-1">
-            <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-            <span className="text-xs font-medium text-emerald-500">↑12%</span>
-          </div>
-          <div className="mt-4 flex items-end gap-[3px]">
-            {[40, 52, 45, 58, 48, 62, 55, 65, 58, 68, 72, 78, 82, 88].map(
-              (h, i) => (
-                <div
-                  key={i}
-                  className="w-2 rounded-sm"
-                  style={{
-                    height: `${h * 0.4}px`,
-                    backgroundColor: i >= 10 ? "#2563EB" : "#2563EB33",
-                  }}
-                />
-              ),
-            )}
+            <span className="text-xs text-slate-500">total paid</span>
           </div>
         </div>
 
@@ -55,10 +115,9 @@ export default function DashboardPage() {
             <span className="text-xs font-medium text-slate-500">Clients</span>
             <Users className="h-4 w-4 text-teal-500" />
           </div>
-          <p className="mt-2 text-3xl font-bold text-slate-900">142</p>
+          <p className="mt-2 text-3xl font-bold text-slate-900">{clientCount}</p>
           <div className="mt-1 flex items-center gap-1">
-            <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-            <span className="text-xs font-medium text-emerald-500">↑8%</span>
+            <span className="text-xs text-slate-500">total clients</span>
           </div>
         </div>
 
@@ -68,9 +127,9 @@ export default function DashboardPage() {
             <span className="text-xs font-medium text-slate-500">Projects</span>
             <FolderKanban className="h-4 w-4 text-blue-600" />
           </div>
-          <p className="mt-2 text-3xl font-bold text-slate-900">18</p>
+          <p className="mt-2 text-3xl font-bold text-slate-900">{projectCount}</p>
           <div className="mt-1 flex items-center gap-1">
-            <span className="text-xs font-medium text-emerald-500">↑3</span>
+            <span className="text-xs font-medium text-emerald-500">{activeProjectCount}</span>
             <span className="text-xs text-slate-400">active</span>
           </div>
         </div>
@@ -81,10 +140,10 @@ export default function DashboardPage() {
             <span className="text-xs font-medium text-slate-500">Deadlines</span>
             <Clock className="h-4 w-4 text-amber-500" />
           </div>
-          <p className="mt-2 text-3xl font-bold text-slate-900">7</p>
+          <p className="mt-2 text-3xl font-bold text-slate-900">{deadlineCount}</p>
           <div className="mt-1 flex items-center gap-1">
-            <span className="text-xs font-medium text-amber-500">↑2</span>
-            <span className="text-xs text-slate-400">this week</span>
+            <span className="text-xs font-medium text-amber-500">{deadlineCount}</span>
+            <span className="text-xs text-slate-400">overdue</span>
           </div>
         </div>
       </div>
@@ -100,38 +159,50 @@ export default function DashboardPage() {
               Recent Activity
             </span>
           </div>
-          <span className="text-xs text-slate-400">Last 30 days</span>
+          <span className="text-xs text-slate-400">
+            <Link href="/dashboard/invoices" className="text-blue-600 hover:text-blue-700">
+              View all
+            </Link>
+          </span>
         </div>
 
-        <div className="divide-y divide-slate-100">
-          {[
-            { name: "ABC Ltd", detail: "Invoice paid", badge: "Paid", badgeColor: "bg-emerald-100 text-emerald-700" },
-            { name: "Sarah Design", detail: "Project completed", badge: "Done", badgeColor: "bg-emerald-100 text-emerald-700" },
-            { name: "TechCorp", detail: "New invoice sent", badge: "Sent", badgeColor: "bg-blue-100 text-blue-700" },
-            { name: "StartupX", detail: "Payment overdue", badge: "Overdue", badgeColor: "bg-red-100 text-red-700" },
-          ].map((activity, i) => (
-            <div key={i} className="flex items-center justify-between px-6 py-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-100">
-                  <span className="text-xs font-bold text-teal-700">
-                    {activity.name.charAt(0)}
+        {recentInvoices.length === 0 ? (
+          <div className="py-12 text-center">
+            <p className="text-sm text-slate-500">No activity yet.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {recentInvoices.map((inv) => {
+              const activity = activityConfig[inv.status || "pending"] || activityConfig.pending;
+              return (
+                <Link
+                  key={inv._id}
+                  href={`/dashboard/invoices/${inv._id}`}
+                  className="flex items-center justify-between px-6 py-4 transition hover:bg-slate-50"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-100">
+                      <span className="text-xs font-bold text-teal-700">
+                        {(inv.client?.companyName || "?").charAt(0)}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        {inv.client?.companyName || "Unknown"}
+                      </p>
+                      <p className="text-xs text-slate-400">{activity.label}</p>
+                    </div>
+                  </div>
+                  <span
+                    className={`rounded-xl px-2 py-0.5 text-xs font-medium ${activity.color}`}
+                  >
+                    {activity.badge}
                   </span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-900">
-                    {activity.name}
-                  </p>
-                  <p className="text-xs text-slate-400">{activity.detail}</p>
-                </div>
-              </div>
-              <span
-                className={`rounded-xl px-2 py-0.5 text-xs font-medium ${activity.badgeColor}`}
-              >
-                {activity.badge}
-              </span>
-            </div>
-          ))}
-        </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
