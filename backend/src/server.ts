@@ -16,12 +16,51 @@ async function connectDB() {
   const uri = process.env.MONGODB_URI || "mongodb://localhost:27017/clienthub";
   const client = new MongoClient(uri);
   await client.connect();
-  db = client.db();
+  db = client.db(process.env.DATABASE_NAME || "clienthub");
   console.log("Connected to MongoDB");
 }
 
 app.use(cors());
 app.use(express.json());
+
+async function authMiddleware(req: any, res: any, next: any) {
+  if (req.path === "/health") {
+    next();
+    return;
+  }
+
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Unauthorized. No token provided." });
+    return;
+  }
+
+  const token = header.split(" ")[1];
+  const session = await db.collection("session").findOne({ token });
+
+  if (!session) {
+    res.status(401).json({ error: "Unauthorized. Invalid or expired session." });
+    return;
+  }
+
+  if (session.expiresAt && new Date(session.expiresAt) < new Date()) {
+    await db.collection("session").deleteOne({ token });
+    res.status(401).json({ error: "Session expired." });
+    return;
+  }
+
+     const userId = session.userId
+        const userQuery = {_id: userId} 
+        const user = await db.collection("user").findOne(userQuery);
+        if(!user){
+          return res.status(401).send({message: 'unauthorized access'})
+        }
+        //console.log('user of the sessio', user);
+        req.user = user;
+  next();
+}
+
+app.use("/api", authMiddleware);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
@@ -48,7 +87,7 @@ app.get("/api/clients", async (req, res) => {
     }
 
     const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
-    const limitNum = Math.max(1, Math.min(50, parseInt(limit as string, 10) || 10));
+    const limitNum = Math.max(1, Math.min(1000, parseInt(limit as string, 10) || 10));
     const skip = (pageNum - 1) * limitNum;
 
     const [clients, total] = await Promise.all([
@@ -137,7 +176,7 @@ app.get("/api/projects", async (req, res) => {
 
 
     const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
-    const limitNum = Math.max(1, Math.min(50, parseInt(limit as string, 10) || 10));
+    const limitNum = Math.max(1, Math.min(1000, parseInt(limit as string, 10) || 10));
     const skip = (pageNum - 1) * limitNum;
 
     const [projects, total] = await Promise.all([

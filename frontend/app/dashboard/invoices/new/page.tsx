@@ -57,11 +57,13 @@ export default function NewInvoicePage() {
     async function loadData() {
       try {
         const [clientsRes, projectsRes] = await Promise.all([
-          getClients({ ownerId: session?.user?.id ?? "" }),
-          getProjects({ ownerId: session?.user?.id ?? "" }),
+          getClients({ ownerId: session?.user?.id ?? "", limit: 999 }),
+          getProjects({ ownerId: session?.user?.id ?? "", limit: 999 }),
         ]);
-        setClients(clientsRes.clients);
-        setProjects(projectsRes.projects);
+        const activeProjects = projectsRes.projects.filter((p) => p.status !== "completed");
+        const eligibleIds = [...new Set(activeProjects.map((p) => p.clientId))];
+        setClients(clientsRes.clients.filter((c) => eligibleIds.includes(c._id)));
+        setProjects(activeProjects);
       } catch {
         // silently fail
       } finally {
