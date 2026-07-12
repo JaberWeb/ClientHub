@@ -8,7 +8,6 @@ import { useSession, signOut } from "@/app/lib/auth-client";
 
 const navLinks = [
   { label: "Home", href: "/" },
-  { label: "Clients", href: "/clients" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
 ];
