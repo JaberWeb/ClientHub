@@ -472,6 +472,53 @@ app.post("/api/settings", async (req, res) => {
   }
 });
 
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: parseInt(process.env.SMTP_PORT || "587"),
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+app.post("/api/contact", async (req, res) => {
+  try {
+    const { name, email, subject, message } = req.body;
+
+    if (!name || !email || !subject || !message) {
+      res.status(400).json({ error: "All fields are required." });
+      return;
+    }
+
+    const mailOptions = {
+      from: `"${name}" <${process.env.SMTP_USER}>`,
+      replyTo: email,
+      to: process.env.CONTACT_EMAIL || "molla.jaber@gmail.com",
+      subject: `[ClientHub Contact] ${subject}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px;">
+          <h2 style="color: #2563EB;">New Contact Message</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0; font-weight: 600; color: #334155;">Name</td><td style="padding: 8px 0;">${name}</td></tr>
+            <tr><td style="padding: 8px 0; font-weight: 600; color: #334155;">Email</td><td style="padding: 8px 0;">${email}</td></tr>
+            <tr><td style="padding: 8px 0; font-weight: 600; color: #334155;">Subject</td><td style="padding: 8px 0;">${subject}</td></tr>
+          </table>
+          <hr style="border: none; border-top: 1px solid #E2E8F0; margin: 16px 0;" />
+          <p style="color: #334155; line-height: 1.6;">${message.replace(/\n/g, "<br>")}</p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({ success: true, message: "Message sent successfully." });
+  } catch (error) {
+    console.error("Error sending contact email:", error);
+    res.status(500).json({ error: "Failed to send message. Please try again later." });
+  }
+});
+
 connectDB()
   .then(() => {
     app.listen(PORT, () => {
