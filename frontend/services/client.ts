@@ -50,3 +50,6 @@ export async function getClientById(id: string): Promise<getSingleClientResult |
     const res = await api.get<getSingleClientResult>(`/api/clients/${id}`);
     return res.data;
 }
+export async function deleteClient(id: string): Promise<void> {
+  await api.delete(`/api/clients/${id}`);
+}

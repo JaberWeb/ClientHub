@@ -55,3 +55,7 @@ export async function getProjects(params: {
   const res = await api.get<GetProjectsResult>("/api/projects", { params });
   return res.data;
 }
+
+export async function deleteProject(id: string): Promise<void> {
+  await api.delete(`/api/projects/${id}`);
+}

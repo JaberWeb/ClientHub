@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useSession } from "@/app/lib/auth-client";
-import { getProjects, updateProjectStatus, Project } from "@/services/project";
+import { getProjects, updateProjectStatus, deleteProject, Project } from "@/services/project";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import {
   FolderKanban,
   Search,
@@ -12,6 +13,7 @@ import {
   ChevronRight,
   DollarSign,
   Tag,
+  Trash2,
   Loader2,
 } from "lucide-react";
 
@@ -52,6 +54,8 @@ export default function ProjectsPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchProjects = useCallback(async () => {
     if (!ownerId) return;
@@ -90,6 +94,21 @@ export default function ProjectsPage() {
       // silently fail
     } finally {
       setStatusUpdating(null);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteProject(deleteTarget.id);
+      setProjects((prev) => prev.filter((p) => p._id !== deleteTarget.id));
+      setTotal((prev) => prev - 1);
+      setDeleteTarget(null);
+    } catch {
+      // silently fail
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -174,6 +193,7 @@ export default function ProjectsPage() {
                         Value
                       </span>
                     </th>
+                    <th className="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-500"><span className="sr-only">Actions</span></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -237,6 +257,15 @@ export default function ProjectsPage() {
                           <span className="font-medium text-slate-900">
                             ${Number(project.projectValue).toLocaleString()}
                           </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget({ id: project._id, name: project.name })}
+                            className="rounded-xl p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </td>
                       </tr>
                     );
@@ -302,6 +331,17 @@ export default function ProjectsPage() {
                         ${Number(project.projectValue).toLocaleString()}
                       </span>
                     </div>
+
+                    <div className="mt-3 flex items-center justify-end border-t border-slate-100 pt-3">
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget({ id: project._id, name: project.name })}
+                        className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -351,6 +391,19 @@ export default function ProjectsPage() {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete Project"
+        message={
+          deleteTarget
+            ? `Are you sure you want to delete "${deleteTarget.name}"? This action cannot be undone.`
+            : ""
+        }
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+        loading={deleting}
+      />
     </div>
   );
 }

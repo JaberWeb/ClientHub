@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useSession } from "@/app/lib/auth-client";
-import { getClients, Client } from "@/services/client";
+import { getClients, deleteClient, Client } from "@/services/client";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import {
   Users,
   Search,
@@ -14,6 +15,7 @@ import {
   Mail,
   Phone,
   Briefcase,
+  Trash2,
   Loader2,
 } from "lucide-react";
 
@@ -29,6 +31,8 @@ export default function ClientsPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchClients = useCallback(async () => {
     if (!ownerId) return;
@@ -56,6 +60,21 @@ export default function ClientsPage() {
     }, 400);
     return () => clearTimeout(timer);
   }, [search]);
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteClient(deleteTarget.id);
+      setClients((prev) => prev.filter((c) => c._id !== deleteTarget.id));
+      setTotal((prev) => prev - 1);
+      setDeleteTarget(null);
+    } catch {
+      // silently fail
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const startItem = (page - 1) * PAGE_LIMIT + 1;
   const endItem = Math.min(page * PAGE_LIMIT, total);
@@ -146,6 +165,7 @@ export default function ClientsPage() {
                       </span>
                     </th>
                     <th className="hidden px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-500 lg:table-cell">Industry</th>
+                    <th className="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-500"><span className="sr-only">Actions</span></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -172,6 +192,15 @@ export default function ClientsPage() {
                         ) : (
                           <span className="text-slate-300">—</span>
                         )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget({ id: client._id, name: client.companyName })}
+                          className="rounded-xl p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -206,6 +235,17 @@ export default function ClientsPage() {
             <p>{client.email}</p>
 
             <p>{client.phone}</p>
+
+            <div className="mt-3 flex items-center justify-end border-t border-slate-100 pt-3">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget({ id: client._id, name: client.companyName })}
+                className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete
+              </button>
+            </div>
         </div>
     ))}
 </div>
@@ -257,8 +297,22 @@ export default function ClientsPage() {
               </div>
             </div>
           </>
+
         )}
       </div>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete Client"
+        message={
+          deleteTarget
+            ? `Are you sure you want to delete "${deleteTarget.name}"? This action cannot be undone.`
+            : ""
+        }
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+        loading={deleting}
+      />
     </div>
   );
 }

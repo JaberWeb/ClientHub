@@ -161,7 +161,7 @@ app.post("/api/projects", async (req, res) => {
 app.get("/api/projects", async (req, res) => {
   try {
     console.log(req.query);
-    const { ownerId, status, page = "1", limit = "10" } = req.query;
+    const { ownerId, status, search, page = "1", limit = "10" } = req.query;
 
     if (!ownerId) {
       res.status(400).json({ error: "ownerId query parameter is required." });
@@ -170,6 +170,12 @@ app.get("/api/projects", async (req, res) => {
 
     const filter: any = { ownerId };
     if (status) filter.status = status;
+    if (search) {
+      const s = search as string;
+      filter.$or = [
+        { name: { $regex: s, $options: "i" } },
+      ];
+    }
 
 
     const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
@@ -230,6 +236,20 @@ app.get("/api/projects/:id", async (req, res) => {
     res.json(project);
   } catch (error) {
     console.error("Error fetching project:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+});
+app.delete("/api/projects/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await db.collection("projects").deleteOne({ _id: new ObjectId(id) });
+    if (result.deletedCount === 0) {
+      res.status(404).json({ error: "Project not found." });
+      return;
+    }
+    res.json({ message: "Project deleted." });
+  } catch (error) {
+    console.error("Error deleting project:", error);
     res.status(500).json({ error: "Internal server error." });
   }
 });
@@ -467,6 +487,20 @@ app.get("/api/clients/:id", async (req, res) => {
     res.json(client);
   } catch (error) {
     console.error("Error fetching client:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+});
+app.delete("/api/clients/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await db.collection("clients").deleteOne({ _id: new ObjectId(id) });
+    if (result.deletedCount === 0) {
+      res.status(404).json({ error: "Client not found." });
+      return;
+    }
+    res.json({ message: "Client deleted." });
+  } catch (error) {
+    console.error("Error deleting client:", error);
     res.status(500).json({ error: "Internal server error." });
   }
 });
