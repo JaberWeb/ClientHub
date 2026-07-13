@@ -233,14 +233,33 @@ app.get("/api/projects/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    const project = await db.collection("projects").findOne({ _id: new ObjectId(id) });
+    const projects = await db.collection("projects")
+      .aggregate([
+        { $match: { _id: new ObjectId(id) } },
+        {
+          $lookup: {
+            from: "clients",
+            let: { clientObjectId: { $toObjectId: "$clientId" } },
+            pipeline: [
+              { $match: { $expr: { $eq: ["$_id", "$$clientObjectId"] } } },
+            ],
+            as: "client",
+          },
+        },
+        {
+          $addFields: {
+            client: { $ifNull: [{ $arrayElemAt: ["$client", 0] }, null] },
+          },
+        },
+      ])
+      .toArray();
 
-    if (!project) {
+    if (!projects.length) {
       res.status(404).json({ error: "Project not found." });
       return;
     }
 
-    res.json(project);
+    res.json(projects[0]);
   } catch (error) {
     console.error("Error fetching project:", error);
     res.status(500).json({ error: "Internal server error." });

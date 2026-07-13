@@ -251,7 +251,9 @@ export default function ProjectsPage() {
                       <tr key={project._id} className="transition hover:bg-slate-50">
                         <td className="px-6 py-4 text-xs text-slate-400">{startItem + i}</td>
                         <td className="px-6 py-4">
-                          <span className="font-medium text-slate-900">{project.name}</span>
+                          <Link href={`/dashboard/projects/${project._id}`} className="font-medium text-slate-900 transition hover:text-blue-600">
+                            {project.name}
+                          </Link>
                         </td>
                         <td className="px-6 py-4">
                           {project.client ? (
@@ -340,7 +342,9 @@ export default function ProjectsPage() {
                       )}
                     </div>
 
-                    <h3 className="font-semibold text-slate-900">{project.name}</h3>
+                    <Link href={`/dashboard/projects/${project._id}`} className="font-semibold text-slate-900 transition hover:text-blue-600">
+                      {project.name}
+                    </Link>
 
                     <div className="mt-1 text-sm text-slate-600">
                       {project.client ? (

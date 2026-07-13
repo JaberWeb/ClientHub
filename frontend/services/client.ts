@@ -29,9 +29,6 @@ export interface GetClientsResult {
   limit: number;
   totalPages: number;
 }
-export interface getSingleClientResult {
-  client: Client;
-}
 export async function addClient(data: CreateClientInput): Promise<Client> {
   const res = await api.post<{ message: string; client: Client }>("/api/clients", data);
   return res.data.client;
@@ -46,9 +43,9 @@ export async function getClients(params: {
   const res = await api.get<GetClientsResult>("/api/clients", { params });
   return res.data;
 }
-export async function getClientById(id: string): Promise<getSingleClientResult | null> {
-    const res = await api.get<getSingleClientResult>(`/api/clients/${id}`);
-    return res.data;
+export async function getClientById(id: string): Promise<Client> {
+  const res = await api.get<Client>(`/api/clients/${id}`);
+  return res.data;
 }
 export async function deleteClient(id: string): Promise<void> {
   await api.delete(`/api/clients/${id}`);

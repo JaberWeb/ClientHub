@@ -57,6 +57,11 @@ export async function getProjects(params: {
   return res.data;
 }
 
+export async function getProjectById(id: string): Promise<Project> {
+  const res = await api.get<Project>(`/api/projects/${id}`);
+  return res.data;
+}
+
 export async function deleteProject(id: string): Promise<void> {
   await api.delete(`/api/projects/${id}`);
 }

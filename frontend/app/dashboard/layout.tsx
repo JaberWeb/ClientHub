@@ -22,9 +22,9 @@ import { useSession } from "@/app/lib/auth-client";
 const sidebarLinks = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Clients", href: "/dashboard/clients", icon: Users },
-  { label: "Add Client", href: "/dashboard/clients/new", icon: UserPlus },
+  { label: "  Add Client", href: "/dashboard/clients/new", icon: UserPlus },
   { label: "Projects", href: "/dashboard/projects", icon: FolderKanban },
-  { label: "Add Project", href: "/dashboard/projects/new", icon: FolderPlus },
+  { label: "  Add Project", href: "/dashboard/projects/new", icon: FolderPlus },
   { label: "Revenue", href: "/dashboard/revenue", icon: DollarSign },
   { label: "Invoices", href: "/dashboard/invoices", icon: FileText },
   { label: "Pending Invoices", href: "/dashboard/pending-invoices", icon: Clock },

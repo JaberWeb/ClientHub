@@ -176,7 +176,9 @@ export default function ClientsPage() {
                     >
                       <td className="px-6 py-4 text-xs text-slate-400">{startItem + i}</td>
                       <td className="px-6 py-4">
-                        <span className="font-medium text-slate-900">{client.companyName}</span>
+                        <Link href={`/dashboard/clients/${client._id}`} className="font-medium text-slate-900 transition hover:text-blue-600">
+                          {client.companyName}
+                        </Link>
                       </td>
                       <td className="px-6 py-4 text-slate-600">{client.contactPerson}</td>
                       <td className="px-6 py-4 text-slate-500">{client.email}</td>
@@ -226,9 +228,9 @@ export default function ClientsPage() {
                           <span className="text-slate-300">—</span>
                         )}
             </div>
-            <h3 className="font-semibold">
-                {client.companyName}
-            </h3>
+            <Link href={`/dashboard/clients/${client._id}`} className="font-semibold transition hover:text-blue-600">
+              {client.companyName}
+            </Link>
 
             <p>{client.contactPerson}</p>
 
