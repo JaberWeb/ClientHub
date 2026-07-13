@@ -61,7 +61,7 @@ export default function ClientsPage() {
   const endItem = Math.min(page * PAGE_LIMIT, total);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6 w-full">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -121,7 +121,7 @@ export default function ClientsPage() {
         ) : (
           <>
             {/* Table */}
-            <div className="overflow-x-auto">
+            <div className="hidden md:block w-full rounded-xl overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200">
@@ -178,6 +178,37 @@ export default function ClientsPage() {
                 </tbody>
               </table>
             </div>
+
+             <div className="space-y-4  md:hidden">
+    {clients.map(client => (
+        <div
+            key={client._id}
+            className="rounded-xl border m-3 border-slate-200 bg-white p-4 shadow-sm relative "
+        >
+          <div className="absolute top-4 right-4">
+            {client.industry ? (
+                          <span className="inline-block rounded-xl bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700">
+                            <span className="inline-flex items-center gap-1">
+                              <Briefcase className="h-3 w-3" />
+                              {client.industry}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-300">—</span>
+                        )}
+            </div>
+            <h3 className="font-semibold">
+                {client.companyName}
+            </h3>
+
+            <p>{client.contactPerson}</p>
+
+            <p>{client.email}</p>
+
+            <p>{client.phone}</p>
+        </div>
+    ))}
+</div>
 
             {/* Pagination */}
             <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 px-6 py-4">

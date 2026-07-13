@@ -153,7 +153,7 @@ export default function ProjectsPage() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200">
@@ -243,6 +243,68 @@ export default function ProjectsPage() {
                   })}
                 </tbody>
               </table>
+            </div>
+
+            <div className="space-y-4 md:hidden p-4">
+              {projects.map((project) => {
+                const sd = statusDisplay(project);
+                return (
+                  <div key={project._id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm relative">
+                    <div className="absolute top-4 right-4">
+                      {project.projectType ? (
+                        <span className="inline-block rounded-xl bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700">
+                          <span className="inline-flex items-center gap-1">
+                            <Tag className="h-3 w-3" />
+                            {project.projectType}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
+                    </div>
+
+                    <h3 className="font-semibold text-slate-900">{project.name}</h3>
+
+                    <div className="mt-1 text-sm text-slate-600">
+                      {project.client ? (
+                        <>
+                          <p className="font-medium text-slate-900">{project.client.companyName}</p>
+                          <p className="text-slate-400">{project.client.email}</p>
+                        </>
+                      ) : (
+                        <p className="text-slate-400">—</p>
+                      )}
+                    </div>
+
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className={"inline-block rounded-xl px-2.5 py-1 text-xs font-medium " + sd.color}>
+                        {sd.label}
+                      </span>
+                      <select
+                        value={project.status || "ongoing"}
+                        onChange={(e) => handleStatusChange(project._id, e.target.value)}
+                        disabled={statusUpdating === project._id}
+                        className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600 outline-none transition focus:border-blue-500 disabled:opacity-50"
+                      >
+                        {statusOptions.map((s) => (
+                          <option key={s} value={s}>{statusLabels[s]}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="mt-2 flex items-center justify-between text-sm">
+                      {project.dueDate ? (
+                        <span className="text-slate-500">Due: {new Date(project.dueDate).toLocaleDateString()}</span>
+                      ) : (
+                        <span className="text-slate-300">No due date</span>
+                      )}
+                      <span className="font-medium text-slate-900">
+                        ${Number(project.projectValue).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 px-6 py-4">

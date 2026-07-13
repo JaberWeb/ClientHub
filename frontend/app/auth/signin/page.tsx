@@ -20,9 +20,14 @@ export default function SignInPage() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<SignInForm>();
 
+  const handleDemoLogin = () => {
+    setValue("email", "molla.jaber@gmail.com");
+    setValue("password", "Ng78@mqdrAYcvVi");
+};
   const onSubmit = async (data: SignInForm) => {
     setError(null);
     try {
@@ -131,12 +136,14 @@ export default function SignInPage() {
                 <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
               )}
             </div>
-
+            <button type="submit" onClick={handleDemoLogin} className="flex cursor-pointer h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-500 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60">
+              Demo Login
+            </button>
             {/* Submit */}
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex cursor-pointer h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSubmitting ? (
                 <>
