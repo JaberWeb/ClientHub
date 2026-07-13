@@ -161,7 +161,7 @@ app.post("/api/projects", async (req, res) => {
 app.get("/api/projects", async (req, res) => {
   try {
     console.log(req.query);
-    const { ownerId, status, search, page = "1", limit = "10" } = req.query;
+    const { ownerId, status, search, sort, page = "1", limit = "10" } = req.query;
 
     if (!ownerId) {
       res.status(400).json({ error: "ownerId query parameter is required." });
@@ -177,6 +177,13 @@ app.get("/api/projects", async (req, res) => {
       ];
     }
 
+    const sortMap: Record<string, Record<string, 1 | -1>> = {
+      newest: { createdAt: -1 },
+      oldest: { createdAt: 1 },
+      value_high: { projectValue: -1 },
+      value_low: { projectValue: 1 },
+    };
+    const sortStage = sortMap[(sort as string) || "newest"] || sortMap.newest;
 
     const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
     const limitNum = Math.max(1, Math.min(1000, parseInt(limit as string, 10) || 10));
@@ -186,7 +193,7 @@ app.get("/api/projects", async (req, res) => {
       db.collection("projects")
         .aggregate([
           { $match: filter },
-          { $sort: { createdAt: -1 } },
+          { $sort: sortStage },
           { $skip: skip },
           { $limit: limitNum },
           {

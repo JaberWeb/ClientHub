@@ -49,6 +49,7 @@ export async function getProjects(params: {
   ownerId: string;
   search?: string;
   status?: string;
+  sort?: string;
   page?: number;
   limit?: number;
 }): Promise<GetProjectsResult> {

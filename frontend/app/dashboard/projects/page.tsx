@@ -11,9 +11,13 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   DollarSign,
   Tag,
   Trash2,
+  Filter,
+  ArrowUpDown,
+  X,
   Loader2,
 } from "lucide-react";
 
@@ -52,6 +56,8 @@ export default function ProjectsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [sortValue, setSortValue] = useState("newest");
   const [loading, setLoading] = useState(true);
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -61,7 +67,7 @@ export default function ProjectsPage() {
     if (!ownerId) return;
     setLoading(true);
     try {
-      const result = await getProjects({ ownerId, search: search || undefined, page, limit: PAGE_LIMIT });
+      const result = await getProjects({ ownerId, search: search || undefined, status: statusFilter || undefined, sort: sortValue !== "newest" ? sortValue : undefined, page, limit: PAGE_LIMIT });
       setProjects(result.projects);
       setTotal(result.total);
       setTotalPages(result.totalPages);
@@ -70,7 +76,7 @@ export default function ProjectsPage() {
     } finally {
       setLoading(false);
     }
-  }, [ownerId, search, page]);
+  }, [ownerId, search, statusFilter, sortValue, page]);
 
   useEffect(() => {
     fetchProjects();
@@ -145,6 +151,48 @@ export default function ProjectsPage() {
           placeholder="Search by project name…"
           className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
         />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative">
+          <Filter className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <select
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+            className="w-44 appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-10 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+          >
+            <option value="">All Statuses</option>
+            {statusOptions.map((s) => (
+              <option key={s} value={s}>{statusLabels[s]}</option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        </div>
+
+        <div className="relative">
+          <ArrowUpDown className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <select
+            value={sortValue}
+            onChange={(e) => { setSortValue(e.target.value); setPage(1); }}
+            className="w-48 appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-10 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+          >
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="value_high">Value: High to Low</option>
+            <option value="value_low">Value: Low to High</option>
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        </div>
+
+        {(statusFilter || sortValue !== "newest") && (
+          <button
+            onClick={() => { setStatusFilter(""); setSortValue("newest"); setPage(1); }}
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+          >
+            <X className="h-4 w-4" />
+            Clear Filters
+          </button>
+        )}
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
