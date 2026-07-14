@@ -568,6 +568,88 @@ app.post("/api/settings", async (req, res) => {
   }
 });
 
+app.get("/api/dashboard/stats", async (req, res) => {
+  try {
+    const { ownerId } = req.query;
+
+    if (!ownerId) {
+      res.status(400).json({ error: "ownerId query parameter is required." });
+      return;
+    }
+
+    const [invoiceAgg, totalClients, totalProjects, activeProjects] = await Promise.all([
+      db.collection("invoices")
+        .aggregate([
+          { $match: { ownerId } },
+          {
+            $facet: {
+              revenue: [
+                { $match: { status: "paid" } },
+                { $group: { _id: null, total: { $sum: { $toDouble: "$amount" } } } },
+              ],
+              overdueCount: [
+                { $match: { status: "overdue" } },
+                { $count: "count" },
+              ],
+              recentInvoices: [
+                { $sort: { createdAt: -1 } },
+                { $limit: 5 },
+                {
+                  $lookup: {
+                    from: "projects",
+                    let: { projectObjectId: { $toObjectId: "$projectId" } },
+                    pipeline: [
+                      { $match: { $expr: { $eq: ["$_id", "$$projectObjectId"] } } },
+                    ],
+                    as: "project",
+                  },
+                },
+                {
+                  $addFields: {
+                    project: { $ifNull: [{ $arrayElemAt: ["$project", 0] }, null] },
+                  },
+                },
+                {
+                  $lookup: {
+                    from: "clients",
+                    let: { clientObjectId: { $toObjectId: "$clientId" } },
+                    pipeline: [
+                      { $match: { $expr: { $eq: ["$_id", "$$clientObjectId"] } } },
+                    ],
+                    as: "client",
+                  },
+                },
+                {
+                  $addFields: {
+                    client: { $ifNull: [{ $arrayElemAt: ["$client", 0] }, null] },
+                  },
+                },
+              ],
+            },
+          },
+        ])
+        .toArray(),
+      db.collection("clients").countDocuments({ ownerId }),
+      db.collection("projects").countDocuments({ ownerId }),
+      db.collection("projects").countDocuments({ ownerId, status: "ongoing" }),
+    ]);
+
+    const s = invoiceAgg[0] || {};
+
+    res.json({
+      totalClients,
+      totalProjects,
+      activeProjects,
+      totalRevenue: s.revenue?.[0]?.total || 0,
+      overdueInvoices: s.overdueCount?.[0]?.count || 0,
+      recentInvoices: s.recentInvoices || [],
+    });
+  } catch (error) {
+    console.error("Error fetching dashboard stats:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+});
+
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
   port: parseInt(process.env.SMTP_PORT || "587"),

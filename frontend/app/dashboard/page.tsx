@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession } from "@/app/lib/auth-client";
-import { getClients } from "@/services/client";
-import { getProjects } from "@/services/project";
-import { getInvoices, Invoice } from "@/services/invoice";
+import { getDashboardStats } from "@/services/dashboard";
+import type { Invoice } from "@/services/invoice";
 import {
   BriefcaseBusiness,
   TrendingUp,
@@ -32,30 +31,13 @@ export default function DashboardPage() {
     async function load() {
       if (!ownerId) return;
       try {
-        const [
-          clientResult,
-          projectResult,
-          activeResult,
-          paidResult,
-          overdueResult,
-          recentResult,
-        ] = await Promise.all([
-          getClients({ ownerId, limit: 1 }),
-          getProjects({ ownerId, limit: 1 }),
-          getProjects({ ownerId, status: "ongoing", limit: 1 }),
-          getInvoices({ ownerId, status: "paid", limit: 9999 }),
-          getInvoices({ ownerId, status: "overdue", limit: 1 }),
-          getInvoices({ ownerId, limit: 5 }),
-        ]);
-
-        setClientCount(clientResult.total);
-        setProjectCount(projectResult.total);
-        setActiveProjectCount(activeResult.total);
-        setRevenue(
-          paidResult.invoices.reduce((sum, inv) => sum + Number(inv.amount || 0), 0)
-        );
-        setDeadlineCount(overdueResult.total);
-        setRecentInvoices(recentResult.invoices);
+        const stats = await getDashboardStats(ownerId);
+        setClientCount(stats.totalClients);
+        setProjectCount(stats.totalProjects);
+        setActiveProjectCount(stats.activeProjects);
+        setRevenue(stats.totalRevenue);
+        setDeadlineCount(stats.overdueInvoices);
+        setRecentInvoices(stats.recentInvoices);
       } catch {
         // silently fail
       } finally {
