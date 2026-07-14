@@ -697,6 +697,19 @@ app.post("/api/contact", async (req, res) => {
   }
 });
 
+Promise.all([
+  db.collection("clients").createIndex({ ownerId: 1, createdAt: -1 }),
+  db.collection("projects").createIndex({ ownerId: 1, status: 1, createdAt: -1 }),
+  db.collection("invoices").createIndex({ ownerId: 1, status: 1, createdAt: -1 }),
+  db.collection("invoices").createIndex({ invoiceNumber: 1 }),
+  db.collection("session").createIndex({ token: 1 }),
+  db.collection("settings").createIndex({ ownerId: 1 }),
+])
+  .then(() => console.log("Indexes created successfully"))
+  .catch((err) => {
+    if (err.code !== 85) console.error("Index creation error:", err);
+  });
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
